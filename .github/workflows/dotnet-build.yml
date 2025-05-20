@@ -8,6 +8,10 @@ on:
     branches: [ "main", "master", "develop" ]
   workflow_dispatch:
 
+permissions:
+  id-token: write # Require write permission to Fetch an OIDC token.
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,8 +35,6 @@ jobs:
 
   docker-develop:
     needs: build
-    permissions:
-      id-token: write # Require write permission to Fetch an OIDC token.
 
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref == 'refs/heads/develop') || (github.event_name == 'pull_request' && github.base_ref == 'develop')
@@ -75,8 +77,7 @@ jobs:
   
   docker-production:
     needs: build
-    permissions:
-      id-token: write # Require write permission to Fetch an OIDC token.
+    
 
     runs-on: ubuntu-latest
     if: ((github.event_name == 'pull_request' || github.event_name == 'push') && (github.base_ref == 'main' || github.base_ref == 'master')) || startsWith(github.ref, 'refs/tags/v')
