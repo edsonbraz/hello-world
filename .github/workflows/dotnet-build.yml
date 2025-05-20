@@ -2,9 +2,10 @@ name: .NET Build and Test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master", "develop" ]
+    tags: [ "v*.*.*" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master", "develop" ]
   workflow_dispatch:
 
 jobs:
@@ -28,33 +29,97 @@ jobs:
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal
 
-  docker:
+  docker-develop:
     needs: build
+    permissions:
+      id-token: write # Require write permission to Fetch an OIDC token.
+      
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/develop') || (github.event_name == 'pull_request' && github.base_ref == 'develop')
     
     steps:
     - uses: actions/checkout@v4
-
+      with:
+        fetch-depth: 0
+    
     - name: Git Semantic Version
+      id: versioning
       uses: PaulHatch/semantic-version@v5.4.0
+      with:
+        major_pattern: "MAJOR"
+        minor_pattern: "MINOR"
+        version_format: "${major}.${minor}.${patch}"
+        bump_each_commit: true
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
     
-    - name: Log in to Azure Container Registry
-      uses: docker/login-action@v3
+    - name: Login to Development ACR with OIDC
+      uses: azure/login@v2
       with:
-        registry: ${{ secrets.ACR_LOGIN_SERVER }}
-        username: ${{ secrets.ACR_USERNAME }}
-        password: ${{ secrets.ACR_PASSWORD }}
-      
-    - name: Build and push Docker image
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    
+    - name: Build and push Docker image to Dev
       uses: docker/build-push-action@v5
       with:
         context: .
         file: ./HelloWorld.API/Dockerfile
         push: true
-        tags: ${{ secrets.ACR_LOGIN_SERVER }}/helloworld-api:latest,${{ secrets.ACR_LOGIN_SERVER }}/helloworld-api:${{ github.sha }}
+        tags: |
+          ${{ secrets.ACR_LOGIN_SERVER_DEV }}/helloworld-api:latest
+          ${{ secrets.ACR_LOGIN_SERVER_DEV }}/helloworld-api:v${{ steps.versioning.outputs.version }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+  
+  docker-production:
+    needs: build
+    permissions:
+      id-token: write # Require write permission to Fetch an OIDC token.
+
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'master')) || startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Extract version from tag
+      id: get_version
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+    
+    - name: Git Semantic Version
+      id: versioning
+      if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+      uses: PaulHatch/semantic-version@v5.4.0
+      with:
+        major_pattern: "MAJOR"
+        minor_pattern: "MINOR"
+        version_format: "${major}.${minor}.${patch}"
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Production ACR with OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    
+    - name: Build and push Docker image to Production
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./HelloWorld.API/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.ACR_LOGIN_SERVER_PRD }}/helloworld-api:latest
+          ${{ secrets.ACR_LOGIN_SERVER_PRD }}/helloworld-api:${{ startsWith(github.ref, 'refs/tags/v') && steps.get_version.outputs.version || format('v{0}', steps.versioning.outputs.version) }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
