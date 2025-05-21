@@ -44,7 +44,7 @@ on:
 jobs:
 
   version:
-    name: 🔖 Compute SemVer
+    name: Compute SemVer
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.semver.outputs.version }}
@@ -61,7 +61,7 @@ jobs:
           bump_each_commit: true
 
   build:
-    name: 🛠️ Build & Test
+    name: Build & Test
     needs: version
     runs-on: ubuntu-latest
     steps:
@@ -77,7 +77,7 @@ jobs:
       - run: dotnet test    ${{ inputs.project_path }} --no-build   --configuration Release --verbosity normal
 
   docker:
-    name: 🐳 Build & Push Docker
+    name: Build & Push Docker
     needs: [version, build]
     runs-on: ubuntu-latest
     
@@ -118,6 +118,6 @@ jobs:
           push:    true
           tags: |
             ${{ inputs.container_registry }}.azurecr.io/${{ inputs.image_name || github.event.repository.name }}:latest
-            ${{ inputs.container_registry }}.azurecr.io/${{ inputs.image_name || github.event.repository.name }}:${{ needs.version.outputs.version }}
+            ${{ inputs.container_registry }}.azurecr.io/${{ inputs.image_name || github.event.repository.name }}:v${{ needs.version.outputs.version }}
           cache-from: type=gha
           cache-to:   type=gha,mode=max
