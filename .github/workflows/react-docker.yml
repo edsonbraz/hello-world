@@ -1,0 +1,111 @@
+name: "React Vite → Build & Docker"
+
+on:
+  workflow_call:
+    inputs:
+      client_id:
+        description: 'Azure Client ID'
+        type: string
+        default: "50e5e7c2-da17-43e7-b05b-e582f17e5ac6"
+      tenant_id:
+        description: 'Azure Tenant ID'
+        type: string
+        default: "495a6f2f-e021-4750-b745-9b4282842206"
+      subscription_id:
+        description: 'Name of the Azure subscription to use'
+        type: string
+        default: '76656480-7374-4919-91eb-15e33417513e'
+      container_registry:
+        description: 'Name of the Azure Container Registry to use'
+        type: string
+      project_path:
+        description: 'Path to your React Vite project'
+        type: string
+        default: '.'
+      docker_build_context:
+        description: 'Docker build context (e.g. ".")'
+        type: string
+        default: '.'
+      dockerfile_path:
+        description: 'Path to your Dockerfile'
+        type: string
+        default: 'Dockerfile'
+        required: true
+      image_name:
+        description: >
+          Base name of your image (without registry).  
+          If left blank, repo name will be used.
+        type: string
+        default: ''  
+
+jobs:
+  version:
+    name: Compute SemVer
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Git Semantic Version
+        id: semver
+        uses: PaulHatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          version_format: "${major}.${minor}.${patch}"
+          bump_each_commit: true
+  
+  docker:
+    name: Build & Push Docker
+    needs: [version]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Docker
+        run: |
+          docker --version
+          docker info
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ inputs.client_id }}
+          tenant-id: ${{ inputs.tenant_id }}
+          subscription-id: ${{ inputs.subscription_id }}
+
+      - name: Azure CLI script
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az account show 
+      
+      - name: Azure ACR Login
+        run: |
+          az acr login --name ${{ inputs.container_registry }}
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.docker_build_context }}
+          file:    ${{ inputs.dockerfile_path }}
+          push:    true
+          tags: |
+            ${{ inputs.container_registry }}.azurecr.io/${{ inputs.image_name || github.event.repository.name }}:latest
+            ${{ inputs.container_registry }}.azurecr.io/${{ inputs.image_name || github.event.repository.name }}:v${{ needs.version.outputs.version }}
+          build-args: |
+            GITHUB_ACTOR=${{ github.actor }}
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}
+            VERSION=${{ needs.version.outputs.version }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
