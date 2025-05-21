@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   call-dotnet-docker:
-    uses: edsonbraz/hello-world/.github/workflows/dotnet-docker.yml@main
+    uses: edsonbraz/hello-world/workflows/dotnet/dotnet-docker.yml@main
     with:
       project_path: '.'
       dotnet_version: '9.0.x'
