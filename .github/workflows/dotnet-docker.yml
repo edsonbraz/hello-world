@@ -58,8 +58,8 @@ jobs:
         uses: PaulHatch/semantic-version@v5.4.0
         with:
           tag_prefix: "v"
-          major_pattern: "MAJOR"
-          minor_pattern: "MINOR"
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
           version_format: "${major}.${minor}.${patch}"
           bump_each_commit: true
 
