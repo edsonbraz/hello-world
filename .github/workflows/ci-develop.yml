@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ develop ]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   dotnet-docker:
     uses: edsonbraz/hello-world/.github/workflows/dotnet-docker.yml@main
