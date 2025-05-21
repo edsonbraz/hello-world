@@ -11,8 +11,18 @@ EXPOSE 8081
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
+ARG GITHUB_TOKEN
+ARG GITHUB_ACTOR
+ARG GITHUB_REPOSITORY_OWNER
+
 WORKDIR /src
 COPY ["HelloWorld.API/HelloWorld.API.csproj", "HelloWorld.API/"]
+
+# Add GitHub NuGet source if GitHub token is provided
+RUN if [ -n "$GITHUB_TOKEN" ] && [ -n "$GITHUB_ACTOR" ] && [ -n "$GITHUB_REPOSITORY_OWNER" ]; then \
+    dotnet nuget add source --username $GITHUB_ACTOR --password $GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/$GITHUB_REPOSITORY_OWNER/index.json"; \
+    fi
+
 RUN dotnet restore "./HelloWorld.API/HelloWorld.API.csproj"
 COPY . .
 WORKDIR "/src/HelloWorld.API"
