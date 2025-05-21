@@ -1,0 +1,19 @@
+name: CI Develop
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  dotnet-docker:
+    uses: ./.github/workflows/dotnet-docker.yml
+    with:
+      project_path: '.'
+      dotnet_version: '9.0.x'
+      docker_build_context: '.'
+      dockerfile_path: './HelloWorld.API/Dockerfile'
+      container_registry: 'ip5acr02.azurecr.io'
+      image_name: 'helloworld-api'
+    

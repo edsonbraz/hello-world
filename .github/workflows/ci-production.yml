@@ -1,0 +1,20 @@
+name: CI Production
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  call-dotnet-docker:
+    uses: ./.github/workflows/dotnet-docker.yml
+    with:
+      project_path: '.'
+      dotnet_version: '9.0.x'
+      docker_build_context: '.'
+      dockerfile_path: './HelloWorld.API/Dockerfile'
+      container_registry: 'ip5acr01.azurecr.io'
+      image_name: 'helloworld-api'
+    
