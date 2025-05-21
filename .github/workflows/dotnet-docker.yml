@@ -98,16 +98,16 @@ jobs:
           inlineScript: |
             az account show 
       
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
       - name: Azure ACR Login
         uses: azure/cli@v2
         with:
           azcliversion: latest
           inlineScript: |
-            az acr login --name ${{ inputs.container_registry }} --expose-token
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
+            az acr login --name ${{ inputs.container_registry }}
+      
       - name: Build & Push
         uses: docker/build-push-action@v5
         with:
