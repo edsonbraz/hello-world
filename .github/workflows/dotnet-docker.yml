@@ -98,9 +98,6 @@ jobs:
           inlineScript: |
             az account show 
       
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
       - name: Azure ACR Login
         uses: azure/cli@v2
         with:
@@ -108,6 +105,9 @@ jobs:
           inlineScript: |
             az acr login --name ${{ inputs.container_registry }}
       
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build & Push
         uses: docker/build-push-action@v5
         with:
@@ -115,7 +115,7 @@ jobs:
           file:    ${{ inputs.dockerfile_path }}
           push:    true
           tags: |
-            ${{ inputs.container_registry }}/${{ inputs.image_name || github.event.repository.name }}:latest
-            ${{ inputs.container_registry }}/${{ inputs.image_name || github.event.repository.name }}:${{ needs.version.outputs.version }}
+            ${{ inputs.container_registry }}.azurecr.io/${{ inputs.image_name || github.event.repository.name }}:latest
+            ${{ inputs.container_registry }}.azurecr.io/${{ inputs.image_name || github.event.repository.name }}:${{ needs.version.outputs.version }}
           cache-from: type=gha
           cache-to:   type=gha,mode=max

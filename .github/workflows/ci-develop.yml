@@ -18,6 +18,6 @@ jobs:
       dotnet_version: '9.0.x'
       docker_build_context: '.'
       dockerfile_path: './HelloWorld.API/Dockerfile'
-      container_registry: 'ip5acr02.azurecr.io'
+      container_registry: 'ip5acr02'
       image_name: 'helloworld-api'
     
