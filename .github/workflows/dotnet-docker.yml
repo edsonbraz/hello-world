@@ -75,6 +75,7 @@ jobs:
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
 
+      - run: dotnet nuget add source --username $GITHUB_ACTOR --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
       - run: dotnet restore ${{ inputs.project_path }}
       - run: dotnet build   ${{ inputs.project_path }} --no-restore --configuration Release
       - run: dotnet test    ${{ inputs.project_path }} --no-build   --configuration Release --verbosity normal
