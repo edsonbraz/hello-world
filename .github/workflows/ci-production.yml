@@ -9,7 +9,7 @@ on:
 
 jobs:
   call-dotnet-docker:
-    uses: ./.github/workflows/dotnet-docker.yml
+    uses: edsonbraz/hello-world/.github/workflows/dotnet-docker.yml@main
     with:
       project_path: '.'
       dotnet_version: '9.0.x'
