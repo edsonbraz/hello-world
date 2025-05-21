@@ -30,7 +30,6 @@ on:
         description: 'Path to your Dockerfile'
         type: string
         default: 'Dockerfile'
-        required: true
       image_name:
         description: >
           Base name of your image (without registry).  
