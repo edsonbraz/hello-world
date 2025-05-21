@@ -84,6 +84,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check Docker
+        run: |
+          docker --version
+          docker info
+
       - name: Azure login
         uses: azure/login@v2
         with:
